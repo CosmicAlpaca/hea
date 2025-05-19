@@ -1,0 +1,6 @@
+<!-- This is a placeholder. Create React App includes a default SVG logo here. -->
+<!-- You can replace it with your actual logo or remove the import if not used. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.9 595.3">
+    <rect width="100%" height="100%" fill="#61DAFB"/>
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="100" fill="#282c34">Health 24/7</text>
+</svg>
