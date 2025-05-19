@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  api_gateway:
+    build: ./api_gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - auth_service
+      - patient_service
+      - doctor_service
+      - chatbot_service
+      - frontend
+    networks:
+      - healthcare_network
+
+  auth_service:
+    build: ./services/auth_service
+    command: >
+      sh -c "python manage.py makemigrations accounts &&
+             python manage.py migrate &&
+             python manage.py create_initial_superuser && # Run custom command
+             python manage.py runserver 0.0.0.0:8001"
+    # ... rest of auth_service config
+    volumes:
+      - ./services/auth_service:/app
+      - auth_db:/app/db_data
+    ports:
+      - "8001:8001"
+    networks:
+      - healthcare_network
+    environment:
+      - DJANGO_SETTINGS_MODULE=auth_project.settings
+      - PYTHONUNBUFFERED=1
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_PASSWORD=adminpassword
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+      - DJANGO_SECRET_KEY=54e^%w2)s(8z5r-7e+skaadm&04(e=7x_j@wwk4q#=abs^t7t0
+
+  patient_service:
+    build: ./services/patient_service
+    command: >
+      sh -c "python manage.py makemigrations appointments &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8002"
+    volumes:
+      - ./services/patient_service:/app
+      - patient_db:/app/db_data
+    ports:
+      - "8002:8002"
+    networks:
+      - healthcare_network
+    depends_on:
+      - auth_service
+    environment:
+      - DJANGO_SETTINGS_MODULE=patient_project.settings
+      - PYTHONUNBUFFERED=1
+      - AUTH_SERVICE_JWT_SECRET_KEY=54e^%w2)s(8z5r-7e+skaadm&04(e=7x_j@wwk4q#=abs^t7t0
+      - DJANGO_SECRET_KEY=54e^%w2)s(8z5r-7e+skaadm&04(e=7x_j@wwk4q#=abs^t7t0
+
+  doctor_service:
+    build: ./services/doctor_service
+    command: >
+      sh -c "python manage.py makemigrations schedules &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8003"
+    volumes:
+      - ./services/doctor_service:/app
+      - doctor_db:/app/db_data
+    ports:
+      - "8003:8003"
+    networks:
+      - healthcare_network
+    depends_on:
+      - auth_service
+    environment:
+      - DJANGO_SETTINGS_MODULE=doctor_project.settings
+      - PYTHONUNBUFFERED=1
+      - DJANGO_SECRET_KEY=54e^%w2)s(8z5r-7e+skaadm&04(e=7x_j@wwk4q#=abs^t7t0
+
+  chatbot_service:
+    build: ./services/chatbot_service
+    command: >
+      sh -c "python manage.py makemigrations chat &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8004"
+    volumes:
+      - ./services/chatbot_service:/app
+    ports:
+      - "8004:8004"
+    networks:
+      - healthcare_network
+    environment:
+      - DJANGO_SETTINGS_MODULE=chatbot_project.settings
+      - PYTHONUNBUFFERED=1
+      - DJANGO_SECRET_KEY=0#vndi$$l+9jwvny3qt1$+xew6@m0no_6tq)ng^^^j!$)(=+kp
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - healthcare_network
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+volumes:
+  auth_db:
+  patient_db:
+  doctor_db:
+
+networks:
+  healthcare_network:
+    driver: bridge
